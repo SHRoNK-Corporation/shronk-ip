@@ -1,11 +1,13 @@
-﻿using System.Net;
-using MaxMind.Db;
+﻿using LiteDB;
 using MaxMind.GeoIP2;
 
 namespace shronkip
 {
     public static class Tool
     {
+        public static LiteDatabase db = new LiteDatabase(@"AuditDB.db");
+        public static ILiteCollection<Audit> col = db.GetCollection<Audit>("Audits");
+
         public static IPLookup GetIPHeaders(IHeaderDictionary headers, HttpContext context)
         {
             string ip, source;

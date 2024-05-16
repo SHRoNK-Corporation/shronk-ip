@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.DataProtection;
-
-namespace shronkip
+﻿namespace shronkip
 {
     public class IPResult
     {
@@ -13,11 +11,20 @@ namespace shronkip
         public string? ISP { get; set; }
         public string? Legalese { get; set; }
         public string? Source { get; set; }
+        public string? blank { get; set; }
     }
 
     public class IPLookup
     {
         public string? IP { get; set; }
         public string? Source { get; set; }
+    }
+
+    public class InfoResp
+    {
+        public string Server { get; set; } = string.Empty;
+        public string Maintainer { get; set; } = string.Empty;
+        public int PassID { get; set; } = 0;
+
     }
 }
