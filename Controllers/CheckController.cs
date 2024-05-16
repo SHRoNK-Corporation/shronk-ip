@@ -174,7 +174,7 @@ namespace shronkip.Controllers
         {
             var audit = Tool.col.FindOne(audit => audit.Token == Token);
 
-            if (audit == null || audit.IPRan == true || audit.Finished == true) { return BadRequest(); }
+            if (audit == null || audit.IPRan == true || audit.Finished == true || audit.CorsRan != true) { return BadRequest(); }
             else
             {
                 audit.IPRan = true;
@@ -245,7 +245,7 @@ namespace shronkip.Controllers
         {
             var audit = Tool.col.FindOne(audit => audit.Token == Token);
 
-            if (audit == null || audit.RawRan == true || audit.Finished == true) { return BadRequest(); }
+            if (audit == null || audit.RawRan == true || audit.Finished == true || audit.CorsRan != true) { return BadRequest(); }
             else
             {
                 audit.RawRan = true;
@@ -299,7 +299,7 @@ namespace shronkip.Controllers
         {
             var audit = Tool.col.FindOne(audit => audit.Token == Token);
 
-            if (audit == null || audit.LookupRan == true || audit.Finished == true) { return BadRequest(); }
+            if (audit == null || audit.LookupRan == true || audit.Finished == true || audit.CorsRan != true) { return BadRequest(); }
             else
             {
                 audit.LookupRan = true;
@@ -368,7 +368,7 @@ namespace shronkip.Controllers
         {
             var audit = Tool.col.FindOne(audit => audit.Token == Token);
 
-            if (audit == null || audit.LuckyRan == true || audit.Finished == true) { return BadRequest(); }
+            if (audit == null || audit.LuckyRan == true || audit.Finished == true || audit.CorsRan != true || audit.CorsRan != true) { return BadRequest(); }
             else
             {
                 audit.LuckyRan = true;
@@ -476,11 +476,12 @@ namespace shronkip.Controllers
                         audit.PassID = rnd.Next(111111111, 999999999);
                         audit.PassID += 2000000000;
                     }
-                    else if (audit.PassResult == true)
+                    else if (audit.PassResult == true && audit.PassPlusResult == false)
                     {
                         audit.PassID = rnd.Next(111111111, 999999999);
                         audit.PassID += 1000000000;
                     }
+                    audit.PassID = Math.Abs(audit.PassID);
                     Tool.col.Update(audit);
 
                     return Ok(new PassResp { Pass = audit.PassResult, PassPlus = audit.PassPlusResult, PassID = audit.PassID, Score = audit.IPScore });

@@ -11,7 +11,6 @@
         public string? ISP { get; set; }
         public string? Legalese { get; set; }
         public string? Source { get; set; }
-        public string? blank { get; set; }
     }
 
     public class IPLookup
