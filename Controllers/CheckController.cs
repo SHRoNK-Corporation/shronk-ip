@@ -474,7 +474,7 @@ namespace shronkip.Controllers
                     if (audit.PassPlusResult == true)
                     {
                         audit.PassID = rnd.Next(111111111, 999999999);
-                        audit.PassID += 2000000000;
+                        audit.PassID += 5000000000;
                     }
                     else if (audit.PassResult == true && audit.PassPlusResult == false)
                     {
@@ -505,7 +505,7 @@ namespace shronkip.Controllers
         [HttpGet(Name = "CheckVerifyAPI")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Audit))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public IActionResult Get(int PassID)
+        public IActionResult Get(long PassID)
         {
             if(PassID == 0000000000)
             {

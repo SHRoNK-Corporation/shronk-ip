@@ -23,13 +23,13 @@ namespace shronkip
         public bool RawRan { get; set; } = false;
         public bool LookupPass { get; set; } = false;
         public bool LookupRan { get; set; } = false;
-        public bool LuckyPass { get; set; } = false;
-        public bool LuckyRan { get; set; } = false;
+        public bool LuckyPass { get; set; } = false; 
         public int LuckyScore { get; set; } = 0;
+        public bool LuckyRan { get; set; } = false;
         public bool PassResult { get; set; } = false;
         public bool PassPlusResult { get; set; } = false;
         public bool Finished { get; set; } = false;
-        public int PassID { get; set; } = 0000000000;
+        public long PassID { get; set; } = 0000000000;
 
         public Audit()
         {
@@ -72,7 +72,7 @@ namespace shronkip
         public bool Pass { get; set; } = false;
         public bool PassPlus { get; set; } = false;
         public int Score { get; set; } = 0;
-        public int PassID { get; set; } = 0;
+        public long PassID { get; set; } = 0;
     }
 }
 
