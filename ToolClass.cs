@@ -1,5 +1,6 @@
 ﻿using LiteDB;
 using MaxMind.GeoIP2;
+using System.Globalization;
 
 namespace shronkip
 {
@@ -101,7 +102,6 @@ namespace shronkip
             {
                 var CityResult = CityReader.City(lookup.IP);
                 var ASNResult = ASNReader.Asn(lookup.IP);
-
                 return new IPResult
                 {
                     IP = lookup.IP,
@@ -114,6 +114,73 @@ namespace shronkip
                     Legalese = "IP Geolocation by DB-IP. CC BY 4.0 DEED https://db-ip.com",
                     Source = lookup.Source
 
+                };
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error reading database");
+
+                return new IPResult
+                {
+                    IP = lookup.IP,
+                    City = "Geolocation Failed",
+                    Country = "Geolocation Failed",
+                    BrexitRequired = false,
+                    CountryCode = "Geolocation Failed",
+                    ASN = 000000,
+                    ISP = "Geolocation Failed",
+                    Legalese = "IP Geolocation by DB-IP. CC BY 4.0 DEED https://db-ip.com"
+                };
+            }
+
+        }
+
+        static IEnumerable<CultureInfo> FindCandidateCultures(RegionInfo region)
+        {
+            return CultureInfo.GetCultures(CultureTypes.SpecificCultures)
+              .Where(x => (new RegionInfo(x.Name)).GeoId == region.GeoId);
+        }
+
+        public static IPResult FullDbLookup(IPLookup lookup, ILogger _logger)
+        {
+            var CityReader = new DatabaseReader("dbip-city-lite-2024-04.mmdb");
+            var ASNReader = new DatabaseReader("dbip-asn-lite-2024-04.mmdb");
+            
+            try
+            {
+                var CityResult = CityReader.City(lookup.IP);
+                var ASNResult = ASNReader.Asn(lookup.IP);
+                RegionInfo ri = new RegionInfo(CityResult.Country.IsoCode);
+                string hostname;
+                try
+                {
+                    hostname = System.Net.Dns.GetHostEntry(lookup.IP).HostName;
+                } catch
+                {
+                    hostname = null;
+                }
+
+
+                return new IPResult
+                {
+                    IP = lookup.IP,
+                    City = CityResult.City.Name,
+                    Country = CityResult.Country.Name,
+                    BrexitRequired = CityResult.Country.IsInEuropeanUnion,
+                    CountryCode = CityResult.Country.IsoCode,
+                    ASN = ASNResult.AutonomousSystemNumber,
+                    ISP = ASNResult.AutonomousSystemOrganization,
+                    Legalese = "IP Geolocation by DB-IP. CC BY 4.0 DEED https://db-ip.com",
+                    Source = lookup.Source,
+                    Lat = CityResult.Location.Latitude,
+                    Lon = CityResult.Location.Longitude,
+                    Postal = CityResult.Postal.Code,
+                    Hostname = hostname,
+                    Timezone = CityResult.Location.TimeZone,
+                    Subnet = ASNResult.Network.ToString(),
+                    Locale = FindCandidateCultures(ri).First().Name,
+                    IsMetric = ri.IsMetric,
+                    Currency = ri.CurrencyEnglishName,
                 };
             }
             catch (Exception e)

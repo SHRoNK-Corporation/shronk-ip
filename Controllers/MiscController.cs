@@ -21,7 +21,7 @@ namespace shronkip.Controllers
             {
                 Server = "SHRoNK-IP Reference Server v2.0.0",
                 Maintainer = "SHRoNK Corporation",
-                PassID = 0
+                PassID = 5627539451
             };
         }
     }

@@ -24,7 +24,6 @@ namespace shronkip
         public bool LookupPass { get; set; } = false;
         public bool LookupRan { get; set; } = false;
         public bool LuckyPass { get; set; } = false; 
-        public int LuckyScore { get; set; } = 0;
         public bool LuckyRan { get; set; } = false;
         public bool PassResult { get; set; } = false;
         public bool PassPlusResult { get; set; } = false;

@@ -188,11 +188,21 @@ namespace shronkip.Controllers
                 {
                     using HttpClient client = new HttpClient();
                     {
-                        string RealIP = client.GetAsync("https://api.ipify.io/").Result.Content.ReadAsStringAsync().Result;
+                        string RealIP = client.GetAsync("https://v4.ipify.io/").Result.Content.ReadAsStringAsync().Result;
 
-                        using HttpResponseMessage response = client.GetAsync(audit.URL).Result;
+                        HttpResponseMessage response = client.GetAsync(String.Concat(audit.URL, "/full")).Result;
                         try { response.EnsureSuccessStatusCode(); }
-                        catch { return BadRequest(); }
+                        catch {
+                            try
+                            {
+                                Response.Clear();
+                                response = client.GetAsync(audit.URL).Result;
+                            }
+                            catch
+                            {
+                                return BadRequest();
+                            }
+                        }
 
                         IPResult jsonResult = new IPResult();
 
@@ -259,7 +269,7 @@ namespace shronkip.Controllers
                 {
                     using HttpClient client = new HttpClient();
                     {
-                        string RealIP = client.GetAsync("https://api.ipify.io/").Result.Content.ReadAsStringAsync().Result;
+                        string RealIP = client.GetAsync("https://v4.ipify.io/").Result.Content.ReadAsStringAsync().Result;
 
                         using HttpResponseMessage response = client.GetAsync(String.Concat(audit.URL, "/raw")).Result;
                         try { response.EnsureSuccessStatusCode(); }
@@ -382,7 +392,7 @@ namespace shronkip.Controllers
                 {
                     using HttpClient client = new HttpClient();
                     {
-                        string RealIP = client.GetAsync("https://api.ipify.io/").Result.Content.ReadAsStringAsync().Result;
+                        string RealIP = client.GetAsync("https://v4.ipify.io/").Result.Content.ReadAsStringAsync().Result;
 
                         for (int i = 0; i < 512; i++)
                         {
@@ -405,23 +415,14 @@ namespace shronkip.Controllers
 
                             if (jsonResult.IP != RealIP)
                             {
-                                int Score = 0;
-                                foreach (var property in jsonResult.GetType().GetProperties())
-                                {
-                                    if (property.GetValue(jsonResult, null) != null && property.GetValue(jsonResult, null) as string != string.Empty)
-                                    {
-                                        Score++;
-                                    }
-                                }
-
-                                audit.LuckyPass = true; audit.LuckyScore = i;
+                                audit.LuckyPass = true;
                                 Tool.col.Update(audit);
 
-                                return Ok(new IPResp { Pass = true, Score = audit.LuckyScore });
+                                return Ok(new IPResp { Pass = true, Score = 0 });
                             }
 
                         }
-                        return Ok(new IPResp { Pass = false, Score = audit.LuckyScore, Comment = "Did not return modified IP in 512 tries" });
+                        return Ok(new IPResp { Pass = false, Score = 0, Comment = "Did not return modified IP in 512 tries" });
                     }
                 }
             }
@@ -465,7 +466,7 @@ namespace shronkip.Controllers
                         audit.Passed = DateTime.Now;
                     }
 
-                    if (audit.IPScore > 10 && audit.PassResult == true)
+                    if (audit.IPScore >= 20 && audit.PassResult == true)
                     {
                         audit.PassPlusResult = true;
                     }
@@ -507,7 +508,7 @@ namespace shronkip.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public IActionResult Get(long PassID)
         {
-            if(PassID == 0000000000)
+            if(PassID < 111111111)
             {
                 return BadRequest();
             }

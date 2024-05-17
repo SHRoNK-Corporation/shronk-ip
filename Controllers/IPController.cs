@@ -27,4 +27,30 @@ namespace shronkip.Controllers
             return result;
         }
     }
+
+    [ApiController]
+    [Route("full")]
+    public class FullAPI : ControllerBase
+    {
+
+        private readonly ILogger<FullAPI> _logger;
+
+        public FullAPI(ILogger<FullAPI> logger)
+        {
+            _logger = logger;
+        }
+
+        [HttpGet(Name = "GetFullIPInfo")]
+        public IPResult Get()
+        {
+            IHeaderDictionary headers = HttpContext.Request.Headers;
+
+            IPLookup client = Tool.GetIPHeaders(headers, HttpContext);
+
+            IPResult result = Tool.FullDbLookup(client, _logger);
+
+            return result;
+        }
+    }
+
 }
