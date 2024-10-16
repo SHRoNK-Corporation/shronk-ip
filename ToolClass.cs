@@ -143,8 +143,8 @@ namespace shronkip
 
         public static IPResult FullDbLookup(IPLookup lookup, ILogger _logger)
         {
-            var CityReader = new DatabaseReader("dbip-city-lite-2024-04.mmdb");
-            var ASNReader = new DatabaseReader("dbip-asn-lite-2024-04.mmdb");
+            var CityReader = new DatabaseReader("dbip-city-lite-2024-10.mmdb");
+            var ASNReader = new DatabaseReader("dbip-asn-lite-2024-10.mmdb");
             
             try
             {

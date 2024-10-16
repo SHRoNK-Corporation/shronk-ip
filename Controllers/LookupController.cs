@@ -30,6 +30,39 @@ namespace shronkip.Controllers
 
             return result;
         }
+
     }
+
+    [ApiController]
+    [Route("lookup/full")]
+    public class LookupFullAPI : ControllerBase
+    {
+
+        private readonly ILogger<LookupFullAPI> _logger;
+
+        public LookupFullAPI(ILogger<LookupFullAPI> logger)
+        {
+            _logger = logger;
+        }
+
+        [HttpGet(Name = "lookup/full")]
+        public IPResult Get(string ip)
+        {
+            IHeaderDictionary headers = HttpContext.Request.Headers;
+            IPLookup SourceIP = Tool.GetIPHeaders(headers, HttpContext);
+
+            IPLookup client = new IPLookup
+            {
+                IP = ip,
+                Source = "Lookup"
+            };
+
+            IPResult result = Tool.FullDbLookup(client, _logger);
+
+            return result;
+        }
+
+    }
+
 
 }
