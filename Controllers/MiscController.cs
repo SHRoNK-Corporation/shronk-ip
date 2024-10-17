@@ -19,9 +19,9 @@ namespace shronkip.Controllers
         {
             return new InfoResp
             {
-                Server = "SHRoNK-IP Reference Server v3.0.0",
+                Server = "SHRoNK-IP Reference Server v3.0.1",
                 Maintainer = "SHRoNK Corporation",
-                PassID = 5627539451
+                PassID = 5806798826
             };
         }
     }

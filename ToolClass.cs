@@ -75,8 +75,8 @@ namespace shronkip
 
         public static IPResult DbLookup(IPLookup lookup, ILogger _logger)
         {
-            var CityReader = new DatabaseReader("dbip-city-lite-2024-04.mmdb");
-            var ASNReader = new DatabaseReader("dbip-asn-lite-2024-04.mmdb");
+            var CityReader = new DatabaseReader("dbip-city-lite-2024-10.mmdb");
+            var ASNReader = new DatabaseReader("dbip-asn-lite-2024-10.mmdb");
 
             if (lookup.IP == "81.102.249.156")
             {

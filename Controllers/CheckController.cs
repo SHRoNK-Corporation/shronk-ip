@@ -369,7 +369,7 @@ namespace shronkip.Controllers
 
                         IPResult jsonResultFull = new IPResult();
 
-                        try { jsonResult = responseFull.Content.ReadFromJsonAsync<IPResult>().Result; }
+                        try { jsonResultFull = responseFull.Content.ReadFromJsonAsync<IPResult>().Result; }
                         catch (AggregateException ex) // jsonexceptions
                         {
                             return Ok(new IPResp { Pass = false, Score = 0, Comment = ex.Message });
