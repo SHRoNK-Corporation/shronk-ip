@@ -1,11 +1,20 @@
-﻿using LiteDB;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
+using Microsoft.EntityFrameworkCore;
 
 namespace shronkip
 {
+    public class AppDbContext : DbContext
+    {
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+        {
+        }
+
+        public DbSet<Audit> Audits { get; set; }
+    }
+
     public class Audit
     {
-        [BsonId][JsonIgnore] public ObjectId Id { get; set; }
+        [JsonIgnore] public int Id { get; set; }
         [JsonIgnore] public string Token { get; set; } = System.Guid.NewGuid().ToString();
         public DateTime Created { get; set; } = DateTime.Now;
         public DateTime Passed { get; set; } = DateTime.UnixEpoch;
@@ -29,12 +38,6 @@ namespace shronkip
         public bool PassPlusResult { get; set; } = false;
         public bool Finished { get; set; } = false;
         public long PassID { get; set; } = 0000000000;
-
-        public Audit()
-        {
-            Tool.col.EnsureIndex(x => x.Id, true);
-            Tool.col.Insert(this);
-        }
     }
 
     public class AuthReq

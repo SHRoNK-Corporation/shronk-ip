@@ -1,5 +1,5 @@
-using LiteDB;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
 
 namespace shronkip.Controllers
@@ -10,10 +10,12 @@ namespace shronkip.Controllers
     public class CheckAuthAPI : ControllerBase
     {
         private readonly ILogger<CheckAuthAPI> _logger;
+        private readonly AppDbContext _context;
 
-        public CheckAuthAPI(ILogger<CheckAuthAPI> logger)
+        public CheckAuthAPI(ILogger<CheckAuthAPI> logger, AppDbContext context)
         {
             _logger = logger;
+            _context = context;
         }
 
         [HttpGet(Name = "CheckAuthAPI")]
@@ -44,7 +46,8 @@ namespace shronkip.Controllers
             audit.OriginatingIP = client.IP;
             audit.OriginatingUA = HttpContext.Request.Headers.UserAgent;
             audit.URL = URL;
-            Tool.col.Update(audit);
+            _context.Add(audit);
+            _context.SaveChanges();
 
             return Ok(new AuthResp
             {
@@ -58,10 +61,12 @@ namespace shronkip.Controllers
     public class CheckTokenAPI : ControllerBase
     {
         private readonly ILogger<CheckTokenAPI> _logger;
+        private readonly AppDbContext _context;
 
-        public CheckTokenAPI(ILogger<CheckTokenAPI> logger)
+        public CheckTokenAPI(ILogger<CheckTokenAPI> logger, AppDbContext context)
         {
             _logger = logger;
+            _context = context;
         }
 
         [HttpGet(Name = "CheckTokenAPI")]
@@ -69,7 +74,7 @@ namespace shronkip.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public IActionResult Get(string Token)
         {
-            var audit = Tool.col.FindOne(audit => audit.Token == Token);
+            var audit = _context.Audits.Where(u => u.Token == Token).FirstOrDefault();
             return audit == null ? BadRequest() : Ok(audit);
         }
     }
@@ -79,10 +84,12 @@ namespace shronkip.Controllers
     public class CheckCorsAPI : ControllerBase
     {
         private readonly ILogger<CheckCorsAPI> _logger;
+        private readonly AppDbContext _context;
 
-        public CheckCorsAPI(ILogger<CheckCorsAPI> logger)
+        public CheckCorsAPI(ILogger<CheckCorsAPI> logger, AppDbContext context)
         {
             _logger = logger;
+            _context = context;
         }
 
         [HttpGet(Name = "CheckCorsAPI")]
@@ -90,13 +97,14 @@ namespace shronkip.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public IActionResult Get(string Token)
         {
-            var audit = Tool.col.FindOne(audit => audit.Token == Token);
+            var audit = _context.Audits.Where(u => u.Token == Token).FirstOrDefault();
 
             if (audit == null || audit.CorsRan == true || audit.Finished == true) { return BadRequest(); }
             else
             {
                 audit.CorsRan = true;
-                Tool.col.Update(audit);
+                _context.Update(audit);
+                _context.SaveChanges();
                 if (audit.OriginatingIP != Tool.GetIPHeaders(HttpContext.Request.Headers, HttpContext).IP
                     || audit.OriginatingUA != HttpContext.Request.Headers.UserAgent)
                 {
@@ -114,7 +122,8 @@ namespace shronkip.Controllers
                         catch
                         {
                             audit.Finished = true;
-                            Tool.col.Update(audit);
+                            _context.Update(audit);
+                            _context.SaveChanges();
                             return Ok(new CorsResp { ConnectPass = false, CorsPass = false, Message = "Could not connect" });
                         }
 
@@ -134,18 +143,21 @@ namespace shronkip.Controllers
                         try
                         { if (response.Headers.GetValues("Access-Control-Allow-Origin").First() == "*") {
                                 audit.ConnectPass = true; audit.CorsPass = true;
-                                Tool.col.Update(audit);
+                                _context.Update(audit);
+                                _context.SaveChanges();
                                 return Ok(new CorsResp { ConnectPass = true, CorsPass = true, Message = "" }); 
                             }
                             else {
                                 audit.ConnectPass = true;
-                                Tool.col.Update(audit);
+                                _context.Update(audit);
+                                _context.SaveChanges();
                                 return Ok(new CorsResp { ConnectPass = true, CorsPass = false, Message = "Cors denied" });
                             } 
                         }
                         catch {
                             audit.ConnectPass = true;
-                            Tool.col.Update(audit);
+                            _context.Update(audit);
+                            _context.SaveChanges();
                             return Ok(new CorsResp { ConnectPass = true, CorsPass = false, Message = "Cors header missing" }); 
                         }
 
@@ -161,10 +173,12 @@ namespace shronkip.Controllers
     public class CheckIPAPI : ControllerBase
     {
         private readonly ILogger<CheckIPAPI> _logger;
+        private readonly AppDbContext _context;
 
-        public CheckIPAPI(ILogger<CheckIPAPI> logger)
+        public CheckIPAPI(ILogger<CheckIPAPI> logger, AppDbContext context)
         {
             _logger = logger;
+            _context = context;
         }
 
         [HttpGet(Name = "CheckIPAPI")]
@@ -172,13 +186,14 @@ namespace shronkip.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public IActionResult Get(string Token)
         {
-            var audit = Tool.col.FindOne(audit => audit.Token == Token);
+            var audit = _context.Audits.Where(u => u.Token == Token).FirstOrDefault();
 
             if (audit == null || audit.IPRan == true || audit.Finished == true || audit.CorsRan != true) { return BadRequest(); }
             else
             {
                 audit.IPRan = true;
-                Tool.col.Update(audit);
+                _context.Update(audit);
+                _context.SaveChanges();
                 if (audit.OriginatingIP != Tool.GetIPHeaders(HttpContext.Request.Headers, HttpContext).IP
                     || audit.OriginatingUA != HttpContext.Request.Headers.UserAgent)
                 {
@@ -188,7 +203,7 @@ namespace shronkip.Controllers
                 {
                     using HttpClient client = new HttpClient();
                     {
-                        string RealIP = client.GetAsync("https://v4.ipify.io/").Result.Content.ReadAsStringAsync().Result;
+                        string RealIP = client.GetAsync("https://www.icanhazip.com/").Result.Content.ReadAsStringAsync().Result;
 
                         HttpResponseMessage response = client.GetAsync(String.Concat(audit.URL, "/full")).Result;
                         try { response.EnsureSuccessStatusCode(); }
@@ -212,7 +227,7 @@ namespace shronkip.Controllers
                             return Ok(new IPResp { Pass = false, Score = 0, Comment = ex.Message });
                         }
 
-                        if (jsonResult.IP != RealIP)
+                        if (jsonResult.IP != RealIP.TrimEnd('\n'))
                         {
                             return Ok(new IPResp { Pass = false, Score = 0, Comment = "Missing required variable - IP" });
                         }
@@ -227,7 +242,8 @@ namespace shronkip.Controllers
                         }
 
                         audit.IPPass = true; audit.IPScore += Score;
-                        Tool.col.Update(audit);
+                        _context.Update(audit);
+                        _context.SaveChanges();
 
                         return Ok(new IPResp { Pass = true, Score = audit.IPScore});
                     }
@@ -242,10 +258,12 @@ namespace shronkip.Controllers
     public class CheckRawAPI : ControllerBase
     {
         private readonly ILogger<CheckRawAPI> _logger;
+        private readonly AppDbContext _context;
 
-        public CheckRawAPI(ILogger<CheckRawAPI> logger)
+        public CheckRawAPI(ILogger<CheckRawAPI> logger, AppDbContext context)
         {
             _logger = logger;
+            _context = context;
         }
 
         [HttpGet(Name = "CheckRawAPI")]
@@ -253,13 +271,14 @@ namespace shronkip.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public IActionResult Get(string Token)
         {
-            var audit = Tool.col.FindOne(audit => audit.Token == Token);
+            var audit = _context.Audits.Where(u => u.Token == Token).FirstOrDefault();
 
             if (audit == null || audit.RawRan == true || audit.Finished == true || audit.CorsRan != true) { return BadRequest(); }
             else
             {
                 audit.RawRan = true;
-                Tool.col.Update(audit);
+                _context.Update(audit);
+                _context.SaveChanges();
                 if (audit.OriginatingIP != Tool.GetIPHeaders(HttpContext.Request.Headers, HttpContext).IP
                     || audit.OriginatingUA != HttpContext.Request.Headers.UserAgent)
                 {
@@ -269,19 +288,20 @@ namespace shronkip.Controllers
                 {
                     using HttpClient client = new HttpClient();
                     {
-                        string RealIP = client.GetAsync("https://v4.ipify.io/").Result.Content.ReadAsStringAsync().Result;
+                        string RealIP = client.GetAsync("https://www.icanhazip.com/").Result.Content.ReadAsStringAsync().Result;
 
                         using HttpResponseMessage response = client.GetAsync(String.Concat(audit.URL, "/raw")).Result;
                         try { response.EnsureSuccessStatusCode(); }
                         catch { return BadRequest(); }
 
-                        if (response.Content.ReadAsStringAsync().Result != RealIP)
+                        if (response.Content.ReadAsStringAsync().Result != RealIP.TrimEnd('\n'))
                         {
                             return Ok(new IPResp { Pass = false, Score = 0, Comment = "Response invalid" });
                         }
 
                         audit.RawPass = true; audit.IPScore += 1;
-                        Tool.col.Update(audit);
+                        _context.Update(audit);
+                        _context.SaveChanges();
 
                         return Ok(new IPResp { Pass = true, Score = audit.IPScore });
                     }
@@ -296,10 +316,12 @@ namespace shronkip.Controllers
     public class CheckLookupAPI : ControllerBase
     {
         private readonly ILogger<CheckLookupAPI> _logger;
+        private readonly AppDbContext _context;
 
-        public CheckLookupAPI(ILogger<CheckLookupAPI> logger)
+        public CheckLookupAPI(ILogger<CheckLookupAPI> logger, AppDbContext context)
         {
             _logger = logger;
+            _context = context;
         }
 
         [HttpGet(Name = "CheckLookupAPI")]
@@ -307,13 +329,14 @@ namespace shronkip.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public IActionResult Get(string Token)
         {
-            var audit = Tool.col.FindOne(audit => audit.Token == Token);
+            var audit = _context.Audits.Where(u => u.Token == Token).FirstOrDefault();
 
             if (audit == null || audit.LookupRan == true || audit.Finished == true || audit.CorsRan != true) { return BadRequest(); }
             else
             {
                 audit.LookupRan = true;
-                Tool.col.Update(audit);
+                _context.Update(audit);
+                _context.SaveChanges();
                 if (audit.OriginatingIP != Tool.GetIPHeaders(HttpContext.Request.Headers, HttpContext).IP
                     || audit.OriginatingUA != HttpContext.Request.Headers.UserAgent)
                 {
@@ -340,8 +363,25 @@ namespace shronkip.Controllers
                             return Ok(new IPResp { Pass = false, Score = 0, Comment = "Missing required variable - IP" });
                         }
 
+                        using HttpResponseMessage responseFull = client.GetAsync(String.Concat(audit.URL, "/lookup/full?ip=1.1.1.1")).Result;
+                        try { response.EnsureSuccessStatusCode(); }
+                        catch { return BadRequest(); }
+
+                        IPResult jsonResultFull = new IPResult();
+
+                        try { jsonResult = responseFull.Content.ReadFromJsonAsync<IPResult>().Result; }
+                        catch (AggregateException ex) // jsonexceptions
+                        {
+                            return Ok(new IPResp { Pass = false, Score = 0, Comment = ex.Message });
+                        }
+
+                        if (jsonResultFull.IP != "1.1.1.1")
+                        {
+                            return Ok(new IPResp { Pass = false, Score = 0, Comment = "Missing required variable on full endpoint - IP" });
+                        }
+
                         int Score = 0;
-                        foreach (var property in jsonResult.GetType().GetProperties())
+                        foreach (var property in jsonResultFull.GetType().GetProperties())
                         {
                             if (property.GetValue(jsonResult, null) != null && property.GetValue(jsonResult, null) as string != string.Empty)
                             {
@@ -350,7 +390,8 @@ namespace shronkip.Controllers
                         }
 
                         audit.LookupPass = true; audit.IPScore += Score;
-                        Tool.col.Update(audit);
+                        _context.Update(audit);
+                        _context.SaveChanges();
 
                         return Ok(new IPResp { Pass = true, Score = audit.IPScore });
                     }
@@ -365,10 +406,12 @@ namespace shronkip.Controllers
     public class CheckLuckyAPI : ControllerBase
     {
         private readonly ILogger<CheckLuckyAPI> _logger;
+        private readonly AppDbContext _context;
 
-        public CheckLuckyAPI(ILogger<CheckLuckyAPI> logger)
+        public CheckLuckyAPI(ILogger<CheckLuckyAPI> logger, AppDbContext context)
         {
             _logger = logger;
+            _context = context;
         }
 
         [HttpGet(Name = "CheckLuckyAPI")]
@@ -376,13 +419,14 @@ namespace shronkip.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public IActionResult Get(string Token)
         {
-            var audit = Tool.col.FindOne(audit => audit.Token == Token);
+            var audit = _context.Audits.Where(u => u.Token == Token).FirstOrDefault();
 
             if (audit == null || audit.LuckyRan == true || audit.Finished == true || audit.CorsRan != true || audit.CorsRan != true) { return BadRequest(); }
             else
             {
                 audit.LuckyRan = true;
-                Tool.col.Update(audit);
+                _context.Update(audit);
+                _context.SaveChanges();
                 if (audit.OriginatingIP != Tool.GetIPHeaders(HttpContext.Request.Headers, HttpContext).IP
                     || audit.OriginatingUA != HttpContext.Request.Headers.UserAgent)
                 {
@@ -416,7 +460,8 @@ namespace shronkip.Controllers
                             if (jsonResult.IP != RealIP)
                             {
                                 audit.LuckyPass = true;
-                                Tool.col.Update(audit);
+                                _context.Update(audit);
+                                _context.SaveChanges();
 
                                 return Ok(new IPResp { Pass = true, Score = 0 });
                             }
@@ -435,10 +480,12 @@ namespace shronkip.Controllers
     public class CheckPassAPI : ControllerBase
     {
         private readonly ILogger<CheckPassAPI> _logger;
+        private readonly AppDbContext _context;
 
-        public CheckPassAPI(ILogger<CheckPassAPI> logger)
+        public CheckPassAPI(ILogger<CheckPassAPI> logger, AppDbContext context)
         {
             _logger = logger;
+            _context = context;
         }
 
         [HttpGet(Name = "CheckPassAPI")]
@@ -446,13 +493,14 @@ namespace shronkip.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public IActionResult Get(string Token)
         {
-            var audit = Tool.col.FindOne(audit => audit.Token == Token);
+            var audit = _context.Audits.Where(u => u.Token == Token).FirstOrDefault();
 
             if (audit == null || audit.Finished == true) { return BadRequest(); }
             else
             {
                 audit.Finished = true;
-                Tool.col.Update(audit);
+                _context.Update(audit);
+                _context.SaveChanges();
                 if (audit.OriginatingIP != Tool.GetIPHeaders(HttpContext.Request.Headers, HttpContext).IP
                     || audit.OriginatingUA != HttpContext.Request.Headers.UserAgent)
                 {
@@ -483,7 +531,8 @@ namespace shronkip.Controllers
                         audit.PassID += 1000000000;
                     }
                     audit.PassID = Math.Abs(audit.PassID);
-                    Tool.col.Update(audit);
+                    _context.Update(audit);
+                    _context.SaveChanges();
 
                     return Ok(new PassResp { Pass = audit.PassResult, PassPlus = audit.PassPlusResult, PassID = audit.PassID, Score = audit.IPScore });
                 }
@@ -497,10 +546,12 @@ namespace shronkip.Controllers
     public class CheckVerifyAPI : ControllerBase
     {
         private readonly ILogger<CheckVerifyAPI> _logger;
+        private readonly AppDbContext _context;
 
-        public CheckVerifyAPI(ILogger<CheckVerifyAPI> logger)
+        public CheckVerifyAPI(ILogger<CheckVerifyAPI> logger, AppDbContext context)
         {
             _logger = logger;
+            _context = context;
         }
 
         [HttpGet(Name = "CheckVerifyAPI")]
@@ -513,7 +564,7 @@ namespace shronkip.Controllers
                 return BadRequest();
             }
 
-            var audit = Tool.col.FindOne(audit => audit.PassID == PassID);
+            var audit = _context.Audits.Where(u => u.PassID == PassID).FirstOrDefault();
 
             if (audit == null || audit.Finished != true) { return BadRequest(); }
             else

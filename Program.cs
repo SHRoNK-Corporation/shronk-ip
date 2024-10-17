@@ -1,8 +1,16 @@
+using Microsoft.EntityFrameworkCore;
+using shronkip;
+using SQLitePCL;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+Batteries.Init();
 
 builder.Services.AddControllers();
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -14,13 +22,13 @@ builder.Services.AddCors(options =>
     options.AddPolicy(name: PolicyName, builder =>
     {
         builder.AllowAnyOrigin()
-        .AllowAnyMethod()
-        .AllowAnyHeader();
+               .AllowAnyMethod()
+               .AllowAnyHeader();
     });
 });
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -29,9 +37,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseAuthorization();
-
 app.UseCors(PolicyName);
+
+app.UseAuthorization();
 
 app.MapControllers();
 
